@@ -45,8 +45,9 @@ async function setUserNotes(jsonText, studentCode, force, changeDisabled, av, au
   const student = jsonData.find(al => al.idalu == studentCode);
   if (!student) return "Alumne no trobat";
 
-  actualizarIdsDeSelectsYInputs(table);
-  aplicarNotesASeleccionats(student.notes, force, changeDisabled, av);
+  actualizarIdsDeSelectsYInputs(table, student.notes, force, changeDisabled, av );
+  //aplicarNotesASeleccionats(student.notes, force, changeDisabled, av);
+
   await aplicarComentaris(student.notes, av, autoCloseComment);
   if(autoCloseAlumnes){
     cerrarAlumnes();
@@ -70,7 +71,10 @@ function getQualificacionsTable() {
 async function aplicarComentaris(notes, av, autoCloseComment) {
 
   const comentarios = notes
-    .filter(entry => (entry.av == av || entry.nota=='P') && entry.comment?.trim())
+    .filter(entry => 
+      ((entry.av == av || entry.nota=='P') && entry.comment?.trim() && !entry.comment?.includes('CONV.')) ||
+      (entry.comment?.includes('CONV.') && entry.ra === 'T')
+    )
     .map(
       entry => {
         const raText = entry.ra === 'T' ? '' : ` ${entry.ra}`;
@@ -101,7 +105,7 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function actualizarIdsDeSelectsYInputs(table) {
+function actualizarIdsDeSelectsYInputs(table, notes, force, changeDisabled, currentAv) {
   table.querySelectorAll("tr").forEach(tr => {
     const tds = tr.querySelectorAll("td");
     if (tds.length < 5) return;
@@ -112,29 +116,68 @@ function actualizarIdsDeSelectsYInputs(table) {
 
     const select = tds[3].querySelector("select");
     const input = tds[3].querySelector("input");
+    
+    if (input && input.value !== "") {
+      console.log("Valor disponible:", input.value);  
+    } 
 
-    if (select) select.id = `${moduleCode}_${raCode}`;
-    if (input) input.id = `i_${moduleCode}_T`;
-  });
-}
-
-function aplicarNotesASeleccionats(notes, force, changeDisabled, currentAv) {
-
-  notes.forEach(({ av, mod, ra, nota }) => {
-    const select = document.getElementById(`${mod}_${ra}`);
-    const input = document.getElementById(`i_${mod}_${ra}`);
+    const nota_ra = notes.find(item => item.mod === moduleCode && item.ra === raCode);
+    const { av, mod, ra, nota, comment } = nota_ra;
     if (!select || (select.hasAttribute("disabled") && !changeDisabled)) return;
 
     const valorNota = calcularValorNota(nota, ra);
     const isEditable = !select.value || ["string:EP", "string:PDT", "string:PQ"].includes(select.value);
 
     if (ra === "T") {
-      aplicarNotaModul(select, input, nota, valorNota, force, isEditable, currentAv ,av);
+      aplicarNotaModul(select, input, nota, valorNota, force, isEditable, currentAv ,av, comment);
     } else {
-      aplicarNotaRA(select, valorNota, force, isEditable, currentAv ,av);
+      aplicarNotaRA(select, valorNota, force, isEditable, currentAv ,av, comment);
     }
+   
+
+    // const selectId = `${moduleCode}_${raCode}`;
+    // const inputId = `i_${moduleCode}_T`;
+
+    // if (select && !select.id) {
+    //   if (!document.getElementById(selectId)) {
+    //     select.id = selectId;
+    //   }
+    // }
+    // if (input && !input.id) {
+    //   if (!document.getElementById(inputId)) {
+    //     input.id = inputId;
+    //   }
+    // }
   });
 }
+
+
+function esperarInputYLeer(input) {
+  if (input && input.value !== "") {
+      console.log("Valor disponible:", input.value);
+      input.value = input.value; 
+  } else {
+      setTimeout(() => esperarInputYLeer(input), 1000); // reintenta después de 1s
+  }
+}
+
+// function aplicarNotesASeleccionats(notes, force, changeDisabled, currentAv) {
+
+//   notes.forEach(({ av, mod, ra, nota, comment }) => {
+//     const select = document.getElementById(`${mod}_${ra}`);
+//     const input = document.getElementById(`i_${mod}_${ra}`);
+//     if (!select || (select.hasAttribute("disabled") && !changeDisabled)) return;
+
+//     const valorNota = calcularValorNota(nota, ra);
+//     const isEditable = !select.value || ["string:EP", "string:PDT", "string:PQ"].includes(select.value);
+
+//     if (ra === "T") {
+//       aplicarNotaModul(select, input, nota, valorNota, force, isEditable, currentAv ,av, comment);
+//     } else {
+//       aplicarNotaRA(select, valorNota, force, isEditable, currentAv ,av, comment);
+//     }
+//   });
+// }
 
 function calcularValorNota(nota, ra) {
   if (nota === "") return ra === "T" ? "string:PQ" : "string:PDT";
@@ -143,34 +186,52 @@ function calcularValorNota(nota, ra) {
   return nota < 5 ? "string:NA" : `string:A${nota}`;
 }
 
-function aplicarNotaModul(select, input, nota, valor, force, editable, currentAv, av) {
+function aplicarNotaModul(select, input, nota, valor, force, editable, currentAv, av, comment) {
+  const tieneConv = comment?.includes('CONV.');
+  const valorNotaActual = input.value;
 
-  if (av === "" || ( nota === "" && (editable || force) && (!input.value || force)) ||av > currentAv ) {
+  console.log("aplicarNotaModul",valorNotaActual);
+
+  if (( nota === "" && (editable || force) && (!valorNotaActual || force)) || av > currentAv  ) {
     select.value = "string:PQ";
     select.dispatchEvent(new Event("change"));
   }
 
-  if (av == "" || nota == "" || currentAv == "" ||av > currentAv)  return
-  
-  if (nota !== "" && (editable || force) && (!input.value || force)) {
+  if ( nota == "")  return
+
+ // Forzamos Angular a sincronitzar el input
+  if( tieneConv && (editable || force) && (!valorNotaActual || force) ) {
+
     select.value = valor;
     select.dispatchEvent(new Event("change"));
     input.value = nota;
     input.dispatchEvent(new Event("change"));
+    input.dispatchEvent(new Event("input"));
+    return;
   }
 
+  if ((av == ""  || currentAv == "" ||av > currentAv))  return
   
+  if ((nota !== ""  && (editable || force) && (!valorNotaActual || force) ) ) {
+    select.value = valor;
+    select.dispatchEvent(new Event("change"));
+    input.value = nota;
+    input.dispatchEvent(new Event("change"));
+    input.dispatchEvent(new Event("input"));
+  }
+
 }
 
 
-function aplicarNotaRA(select, valor, force, editable, currentAv, av) {
+function aplicarNotaRA(select, valor, force, editable, currentAv, av, comment) {
   const optionExists = Array.from(select.options).some(option => option.value === valor);
+  const tieneConv = comment?.includes('CONV.');
 
-  if (optionExists && (editable || force)) {
-    if(av > currentAv && valor !='string:EP')  {
+  if ((optionExists && (editable || force))) {
+    if((av > currentAv && valor !='string:EP') && !tieneConv)  {
       valor = "string:PDT"
     }
-    console.log(valor);
+    //console.log(valor);
 
     select.value = valor;
     select.dispatchEvent(new Event("change"));
