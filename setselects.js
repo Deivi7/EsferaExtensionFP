@@ -26,9 +26,10 @@ if (!window.__listenerRegistradoSetSelects) {
 }
 
 function handleMessage(message, sender, sendResponse) {
-  resultado = modifySelects(message.state, message.force, message.changeDisabled);
-  sendResponse({ resultado })
-  return true;
+  if (message.action === "setSelects") {
+    resultado = modifySelects(message.state, message.force, message.changeDisabled);
+    sendResponse({ resultado: resultado });
+  }
 }
 
 function modifySelects(state, force, changeDisabled) {
@@ -52,7 +53,7 @@ function modifySelects(state, force, changeDisabled) {
 
 function findTargetTable() {
   return (
-    document.querySelector('table[data-st-table="qualificacions"]') ||
+    document.querySelector('#mainView table.smart-table') ||
     document.querySelector('table[data-st-table="dummyStudents"]')
   );
 }
@@ -63,7 +64,7 @@ force === true → permite cambiar valores incluso si el select ya tiene uno.
 force === false → solo modifica si el select no tiene valor. 
 */
 
-function shouldProcessSelect(select,force, changeDisabled) {
+function shouldProcessSelect(select, force, changeDisabled) {
   if (!select) return false;
   const isDisabled = select.hasAttribute("disabled");
   const hasValue = !!select.value;

@@ -27,12 +27,13 @@ if (!window.__listenerRegistradoUserQualificacions) {
 }
 
 function handleMessage(message, sender, sendResponse) {
-
-  const { jsonText, studentCode, force, changeDisabled, av, autoCloseComment, autoCloseAlumnes } = message;
-  resultado = setUserNotes(jsonText, studentCode, force, changeDisabled, av, autoCloseComment, autoCloseAlumnes);
-  sendResponse({ resultado });
-
-  return true; // Necesario para respuestas async
+  if (message.action === "setUserNotes") {
+    const { jsonText, studentCode, force, changeDisabled, av, autoCloseComment, autoCloseAlumnes } = message;
+    setUserNotes(jsonText, studentCode, force, changeDisabled, av, autoCloseComment, autoCloseAlumnes).then(resultado => {
+      sendResponse({ resultado });
+    });
+    return true; // Necesario para respuestas async
+  }
 }
 
 async function setUserNotes(jsonText, studentCode, force, changeDisabled, av, autoCloseComment, autoCloseAlumnes) {
@@ -43,22 +44,22 @@ async function setUserNotes(jsonText, studentCode, force, changeDisabled, av, au
   }
 
   const table = getQualificacionsTable();
-  if (!table){
+  if (!table) {
     console.log("Error a llegir la informació de l'Esfer@", table);
     return "Error a llegir la informació de l'Esfer@";
-  } 
+  }
 
   const student = jsonData.find(al => al.idalu == studentCode);
-  if (!student){
+  if (!student) {
     console.log("Alumne no trobat", student);
     return "Alumne no trobat";
-  } 
+  }
 
-  actualizarIdsDeSelectsYInputs(table, student.notes, force, changeDisabled, av );
+  actualizarIdsDeSelectsYInputs(table, student.notes, force, changeDisabled, av);
   //aplicarNotesASeleccionats(student.notes, force, changeDisabled, av);
 
   await aplicarComentaris(student.notes, av, autoCloseComment);
-  if(autoCloseAlumnes){
+  if (autoCloseAlumnes) {
     cerrarAlumnes();
   }
 
@@ -76,17 +77,15 @@ function parseJSON(jsonText) {
 function getQualificacionsTable() {
   // const table = document.querySelector('.table .table-striped .table-hover .smart-table');
   const table = document.querySelector("#mainView table.smart-table");
-  console.log("table", table);
   table.classList.add('qualificacions-table-id');
-
   return table;
 }
 
 async function aplicarComentaris(notes, av, autoCloseComment) {
 
   const comentarios = notes
-    .filter(entry => 
-      ((entry.av == av || entry.nota=='P') && entry.comment?.trim() && !entry.comment?.includes('CONV.')) ||
+    .filter(entry =>
+      ((entry.av == av || entry.nota == 'P') && entry.comment?.trim() && !entry.comment?.includes('CONV.')) ||
       (entry.comment?.includes('CONV.') && entry.ra === 'T')
     )
     .map(
@@ -102,16 +101,16 @@ async function aplicarComentaris(notes, av, autoCloseComment) {
   let textarea = document.querySelector('textarea[data-ng-model^="comentariGeneral.comentari"]')
   textarea.value = comentarios;
   textarea.dispatchEvent(new Event("change"));
-  
+
   await delay(300);
-  
-  if(autoCloseComment){
+
+  if (autoCloseComment) {
     const saveBtn = document.querySelector('a[data-ng-click^="saveComentariGeneral()"]');
-    if(saveBtn){ saveBtn.click(); }
+    if (saveBtn) { saveBtn.click(); }
   }
 }
 
-function cerrarAlumnes(){
+function cerrarAlumnes() {
   // Por implementar
 }
 
@@ -122,21 +121,21 @@ function delay(ms) {
 function actualizarIdsDeSelectsYInputs(table, notes, force, changeDisabled, currentAv) {
 
   table.querySelectorAll("tr").forEach(tr => {
-    
+
     const tds = tr.querySelectorAll("td");
 
     if (tds.length < 6) return;
-    
+
     const parts = tds[0].textContent.trim().split("_");
     const moduleCode = parts[0];
     const raCode = parts.length > 2 ? parts[2] : "T";
 
     const select = tds[4].querySelector("select");
     const input = tds[4].querySelector("input");
-    
-    if (input && input.value !== "") {
-      console.log("Valor disponible:", input.value);  
-    } 
+
+    // if (input && input.value !== "") {
+    //   console.log("Valor disponible:", input.value);
+    // }
 
     const nota_ra = notes.find(item => item.mod === moduleCode && item.ra === raCode);
     const { av, mod, ra, nota, comment } = nota_ra;
@@ -146,11 +145,11 @@ function actualizarIdsDeSelectsYInputs(table, notes, force, changeDisabled, curr
     const isEditable = !select.value || ["string:EP", "string:PDT", "string:PQ"].includes(select.value);
 
     if (ra === "T") {
-      aplicarNotaModul(select, input, nota, valorNota, force, isEditable, currentAv ,av, comment);
+      aplicarNotaModul(select, input, nota, valorNota, force, isEditable, currentAv, av, comment);
     } else {
-      aplicarNotaRA(select, valorNota, force, isEditable, currentAv ,av, comment);
+      aplicarNotaRA(select, valorNota, force, isEditable, currentAv, av, comment);
     }
-   
+
 
     // const selectId = `${moduleCode}_${raCode}`;
     // const inputId = `i_${moduleCode}_T`;
@@ -171,10 +170,10 @@ function actualizarIdsDeSelectsYInputs(table, notes, force, changeDisabled, curr
 
 function esperarInputYLeer(input) {
   if (input && input.value !== "") {
-      console.log("Valor disponible:", input.value);
-      input.value = input.value; 
+    console.log("Valor disponible:", input.value);
+    input.value = input.value;
   } else {
-      setTimeout(() => esperarInputYLeer(input), 1000); // reintenta después de 1s
+    setTimeout(() => esperarInputYLeer(input), 1000); // reintenta después de 1s
   }
 }
 
@@ -207,17 +206,17 @@ function aplicarNotaModul(select, input, nota, valor, force, editable, currentAv
   const tieneConv = comment?.includes('CONV.');
   const valorNotaActual = input.value;
 
-  console.log("aplicarNotaModul",valorNotaActual);
+  //console.log("aplicarNotaModul",valorNotaActual);
 
-  if (( nota === "" && (editable || force) && (!valorNotaActual || force)) || av > currentAv  ) {
+  if ((nota === "" && (editable || force) && (!valorNotaActual || force)) || av > currentAv) {
     select.value = "string:PQ";
     select.dispatchEvent(new Event("change"));
   }
 
-  if ( nota == "")  return
+  if (nota == "") return
 
- // Forzamos Angular a sincronitzar el input
-  if( tieneConv && (editable || force) && (!valorNotaActual || force) ) {
+  // Forzamos Angular a sincronitzar el input
+  if (tieneConv && (editable || force) && (!valorNotaActual || force)) {
 
     select.value = valor;
     select.dispatchEvent(new Event("change"));
@@ -227,9 +226,9 @@ function aplicarNotaModul(select, input, nota, valor, force, editable, currentAv
     return;
   }
 
-  if ((av == ""  || currentAv == "" ||av > currentAv))  return
-  
-  if ((nota !== ""  && (editable || force) && (!valorNotaActual || force) ) ) {
+  if ((av == "" || currentAv == "" || av > currentAv)) return
+
+  if ((nota !== "" && (editable || force) && (!valorNotaActual || force))) {
     select.value = valor;
     select.dispatchEvent(new Event("change"));
     input.value = nota;
@@ -245,7 +244,7 @@ function aplicarNotaRA(select, valor, force, editable, currentAv, av, comment) {
   const tieneConv = comment?.includes('CONV.');
 
   if ((optionExists && (editable || force))) {
-    if((av > currentAv && valor !='string:EP') && !tieneConv)  {
+    if ((av > currentAv && valor != 'string:EP') && !tieneConv) {
       valor = "string:PDT"
     }
     //console.log(valor);

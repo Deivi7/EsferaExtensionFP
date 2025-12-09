@@ -15,7 +15,7 @@ async function initExtension() {
   const tab = await getActiveTab();
   cargarInfoApp();
   extraerInformacionDesdeEsfera(tab.id);
-  generarAvaluacions(); 
+  generarAvaluacions();
   await cargarOpciones();
   inicializarUIOpciones();
   wireSettingsUI();
@@ -27,7 +27,7 @@ async function getActiveTab() {
 }
 
 function cargarInfoApp() {
-  let savedData="";
+  let savedData = "";
   chrome.storage.local.get(["notes"], (result) => {
     savedData = result.notes || "";
     document.getElementById("userNotesText").value = savedData;
@@ -39,9 +39,9 @@ function cargarInfoApp() {
   });
 }
 
-async function cargarOpciones(){
-  return new Promise((resolve)=>{
-    chrome.storage.sync.get(["changeDisabled","autoCloseComment","autoCloseAlumnes"], (result)=>{
+async function cargarOpciones() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(["changeDisabled", "autoCloseComment", "autoCloseAlumnes"], (result) => {
       changeDisabled = result.changeDisabled ?? true;
       autoCloseComment = result.autoCloseComment ?? false;
       autoCloseAlumnes = result.autoCloseAlumnes ?? false;
@@ -50,20 +50,20 @@ async function cargarOpciones(){
   });
 }
 
-function inicializarUIOpciones(){
+function inicializarUIOpciones() {
   const elChange = document.getElementById("optChangeDisabled");
   const elComment = document.getElementById("optAutoCloseComment");
   const elAlumnes = document.getElementById("optAutoCloseAlumnes");
-  if(elChange) elChange.checked = !!changeDisabled;
-  if(elComment) elComment.checked = !!autoCloseComment;
-  if(elAlumnes) elAlumnes.checked = !!autoCloseAlumnes;
+  if (elChange) elChange.checked = !!changeDisabled;
+  if (elComment) elComment.checked = !!autoCloseComment;
+  if (elAlumnes) elAlumnes.checked = !!autoCloseAlumnes;
 }
 
-function wireSettingsUI(){
+function wireSettingsUI() {
   const btn = document.getElementById("settingsBtn");
   const panel = document.getElementById("settingsPanel");
-  if(btn && panel){
-    btn.addEventListener("click", ()=>{
+  if (btn && panel) {
+    btn.addEventListener("click", () => {
       panel.style.display = panel.style.display === "none" ? "block" : "none";
     });
   }
@@ -71,20 +71,20 @@ function wireSettingsUI(){
   const elChange = document.getElementById("optChangeDisabled");
   const elComment = document.getElementById("optAutoCloseComment");
   const elAlumnes = document.getElementById("optAutoCloseAlumnes");
-  if(elChange){
-    elChange.addEventListener("change", ()=>{
+  if (elChange) {
+    elChange.addEventListener("change", () => {
       changeDisabled = elChange.checked;
       chrome.storage.sync.set({ changeDisabled });
     });
   }
-  if(elComment){
-    elComment.addEventListener("change", ()=>{
+  if (elComment) {
+    elComment.addEventListener("change", () => {
       autoCloseComment = elComment.checked;
       chrome.storage.sync.set({ autoCloseComment });
     });
   }
-  if(elAlumnes){
-    elAlumnes.addEventListener("change", ()=>{
+  if (elAlumnes) {
+    elAlumnes.addEventListener("change", () => {
       autoCloseAlumnes = elAlumnes.checked;
       chrome.storage.sync.set({ autoCloseAlumnes });
     });
@@ -118,8 +118,9 @@ function manejarResultadosEsfera(results) {
   if (!results || !results[0] || !results[0].result) return;
   const data = results[0].result;
 
-  if (data.type === "RA") {mostrarInfoRA(data);
-  } else if (data.type === "ST") {mostrarInfoEstudiant(data);}
+  if (data.type === "RA") {
+    mostrarInfoRA(data);
+  } else if (data.type === "ST") { mostrarInfoEstudiant(data); }
 }
 
 document.getElementById("clearButton").addEventListener("click", () => {
@@ -148,7 +149,7 @@ document.getElementById("evaluation").addEventListener("change", () => {
 });
 
 
-document.getElementById("pendingBtn").addEventListener("click", async() => {
+document.getElementById("pendingBtn").addEventListener("click", async () => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -156,16 +157,16 @@ document.getElementById("pendingBtn").addEventListener("click", async() => {
     target: { tabId: tab.id },
     files: ["setselects.js"]
   }).then(() => {
-      chrome.tabs.sendMessage(tab.id, { state: "string:PDT", force: getForcePending(), changeDisabled:changeDisabled }, (response) => {
+    chrome.tabs.sendMessage(tab.id, { action: "setSelects", state: "string:PDT", force: getForcePending(), changeDisabled: changeDisabled }, (response) => {
       document.getElementById("results").textContent = response.resultado;
-      });
-    }
+    });
+  }
   ).catch(err => {
     console.error("Error:", err);
   });
 });
 
-document.getElementById("processBtn").addEventListener("click", async() => {
+document.getElementById("processBtn").addEventListener("click", async () => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -173,17 +174,17 @@ document.getElementById("processBtn").addEventListener("click", async() => {
     target: { tabId: tab.id },
     files: ["setselects.js"]
   }).then(() => {
-      chrome.tabs.sendMessage(tab.id, { state: "string:EP", force: getForceProcess(), changeDisabled:changeDisabled }, (response) => {
+    chrome.tabs.sendMessage(tab.id, { action: "setSelects", state: "string:EP", force: getForceProcess(), changeDisabled: changeDisabled }, (response) => {
       document.getElementById("results").textContent = response.resultado;
-      });
-    }
+    });
+  }
   ).catch(err => {
     console.error("Error:", err);
   });
 });
 
 
-document.getElementById("setUserNotes").addEventListener("click", async() => {
+document.getElementById("setUserNotes").addEventListener("click", async () => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -191,17 +192,19 @@ document.getElementById("setUserNotes").addEventListener("click", async() => {
     target: { tabId: tab.id },
     files: ["setuserqualifications.js"]
   }).then(() => {
-      chrome.tabs.sendMessage(tab.id, { jsonText: getJsonText(),
-                                        studentCode:studentCode,
-                                        force: getForceUserQualifications(),
-                                        changeDisabled:changeDisabled,
-                                        av: getAv(),
-                                        autoCloseComment:autoCloseComment,
-                                        autoCloseAlumnes:autoCloseAlumnes
-      }, (response) => {
-        document.getElementById("results").textContent = response.resultado;
-      });
-    }
+    chrome.tabs.sendMessage(tab.id, {
+      action: "setUserNotes",
+      jsonText: getJsonText(),
+      studentCode: studentCode,
+      force: getForceUserQualifications(),
+      changeDisabled: changeDisabled,
+      av: getAv(),
+      autoCloseComment: autoCloseComment,
+      autoCloseAlumnes: autoCloseAlumnes
+    }, (response) => {
+      document.getElementById("results").textContent = response.resultado;
+    });
+  }
   ).catch(err => {
     console.error("Error:", err);
   });
@@ -215,58 +218,58 @@ document.getElementById("setRANotes").addEventListener("click", () => {
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
       function: setRANotes,
-      args : [ getJsonText(), codeModule, codeRA, forceRANotes ]
+      args: [getJsonText(), codeModule, codeRA, forceRANotes]
     });
   });
 });
 
-function getForcePending() { 
-  return  document.getElementById("forcePending").checked;
+function getForcePending() {
+  return document.getElementById("forcePending").checked;
 }
 
-function getForceUserQualifications() { 
-  return  document.getElementById("forceUserNotes").checked;
+function getForceUserQualifications() {
+  return document.getElementById("forceUserNotes").checked;
 }
 
-function getForceProcess() { 
-  return  document.getElementById("forceProcess").checked;
+function getForceProcess() {
+  return document.getElementById("forceProcess").checked;
 }
 
-function getAv() { 
-  return  document.getElementById("evaluation").value;
+function getAv() {
+  return document.getElementById("evaluation").value;
 }
 
-function getJsonText() { 
-  return  document.getElementById("userNotesText").value;
+function getJsonText() {
+  return document.getElementById("userNotesText").value;
 }
 
 
 function setRANotes(jsonText, codeModule, raCode, force) {
   //document.querySelector('a[data-ng-click^="canviAlumne(\'next\')"]').click(); //Hacer clic
-  
+
   let changeDisabled = true;
 
   let jsonData;
   try {
-     jsonData = JSON.parse(jsonText); // Parseamos el JSON
+    jsonData = JSON.parse(jsonText); // Parseamos el JSON
   } catch (error) {
     return "Error en analitzar el JSON. Assegura't que estigui en el format correcte.";
   }
-  
+
   const table = document.querySelector('table[data-st-table="dummyStudents"]');
   if (!table) return "Error a llegir la informació de l'Esfer@";
 
   table.querySelectorAll("tr").forEach(tr => {
     let tds = tr.querySelectorAll("td");
-    if(tds.length<7) return;
-    
+    if (tds.length < 7) return;
+
     let idalu = tds[0].textContent.trim();
     let select = tds[5].querySelector('select');
     let input = tds[5].querySelector('input');
-    
-    if (select) select.id = "s_"+idalu;
-    if(input) input.id = "i_"+idalu + "_T";
-    
+
+    if (select) select.id = "s_" + idalu;
+    if (input) input.id = "i_" + idalu + "_T";
+
   });
 
   jsonData.forEach((entry) => {
@@ -274,66 +277,66 @@ function setRANotes(jsonText, codeModule, raCode, force) {
 
 
     select = document.getElementById("s_" + idalu);
-  
-    if( select != null && select.hasAttribute("disabled") && !changeDisabled ) return;
-    if(!select || select==null) return;
-  
+
+    if (select != null && select.hasAttribute("disabled") && !changeDisabled) return;
+    if (!select || select == null) return;
+
     let nota = notes.find(notaAlu => notaAlu.mod == codeModule && notaAlu.ra == raCode).nota;
-    if(!nota) return;
-   
+    if (!nota) return;
+
     // console.log(idalu);
-    console.log(idalu+'-'+nota);
+    console.log(idalu + '-' + nota);
 
     let value = nota === "" ? (raCode === "T" ? "string:PQ" : "string:PDT") :
-                raCode === "T" ? "" :
-                nota === "P" ? "string:EP" :
-                nota < 5 ? "string:NA" : `string:A${nota}`;
-                
-    
+      raCode === "T" ? "" :
+        nota === "P" ? "string:EP" :
+          nota < 5 ? "string:NA" : `string:A${nota}`;
+
+
     let isEdiableSelect = !select.value || select.value == 'string:EP' || select.value == 'string:PDT';
-    if (raCode == "T" &&  nota != "" ) {
+    if (raCode == "T" && nota != "") {
 
       let optionExists = Array.from(select.options).some(option => option.value === value);
-      if (optionExists && ( isEdiableSelect || force) ) {
+      if (optionExists && (isEdiableSelect || force)) {
         select.value = value;
         select.dispatchEvent(new Event('change'));
-      }   
+      }
 
       input = document.getElementById("i_" + idalu)
-      
-      if(input && ( !input.value || force)){
+
+      if (input && (!input.value || force)) {
         input.value = nota;
         input.dispatchEvent(new Event('change'));
       }
-      
-    }else if( raCode == "T" ){
 
-      if (( isEdiableSelect || force) ) {
+    } else if (raCode == "T") {
+
+      if ((isEdiableSelect || force)) {
         select.value = "string:PQ";
         select.dispatchEvent(new Event('change'));
-      }   
-   
+      }
+
       input = document.getElementById("i_" + modCode + "_" + raCode)
-      if(input  &&  force){
+      if (input && force) {
         select.value = value;
         input.dispatchEvent(new Event('change'));
       }
 
-    }else{
-      
+    } else {
+
       let optionExists = Array.from(select.options).some(option => option.value === value);
-      if (optionExists && ( isEdiableSelect|| force)) {
+      if (optionExists && (isEdiableSelect || force)) {
         select.value = value;
         select.dispatchEvent(new Event('change'));
-      } 
+      }
     }
   });
-  
+
 };
 
 
 function extractInfoEsfera() {
-  
+
   const breadcrumbItems = document.querySelectorAll('.breadcrumb-wrapper ol.breadcrumb li');
   const lastItem = breadcrumbItems[breadcrumbItems.length - 1];
   if (!lastItem) return "No trobat";
@@ -342,19 +345,19 @@ function extractInfoEsfera() {
   const parts = lastItemText.split('-');
   const part1 = parts[0].trim();
   const part2 = parts[1].trim();
-  let type="";
-  
-  if (part1.split('_').length == 1){
-    type="ST";
+  let type = "";
+
+  if (part1.split('_').length == 1) {
+    type = "ST";
     let idalu = part1;
     let nom = part2;
     return { type, idalu, nom };
-  }else{
+  } else {
     let moduleRA = part1.split("_");
     let moduleCode = moduleRA[0];
     let raCode = moduleRA.length > 2 ? moduleRA[2] : "T";
-    type="RA";
-    return {type, moduleCode, raCode };
+    type = "RA";
+    return { type, moduleCode, raCode };
   }
 }
 
@@ -364,11 +367,11 @@ function generarAvaluacions() {
 
   // Opcions de les avaluacions possibles
   const evaluations = [
-      { label: "Seleciona una avaluació", value: 0 },
-      { label: "Primera avaluació (1)", value: 1 },
-      { label: "Segona avaluació (2)", value: 2 },
-      { label: "Avaluació final (3)", value: 3 },
-      { label: "Avaluació extraordinària (4)", value: 4}
+    { label: "Seleciona una avaluació", value: 0 },
+    { label: "Primera avaluació (1)", value: 1 },
+    { label: "Segona avaluació (2)", value: 2 },
+    { label: "Avaluació final (3)", value: 3 },
+    { label: "Avaluació extraordinària (4)", value: 4 }
   ];
 
   const selectElement = document.getElementById('evaluation');
@@ -387,12 +390,12 @@ function generarAvaluacions() {
 
   // Afegir les opcions al select
   evaluations.forEach((evaluation) => {
-      const option = document.createElement('option');
-      option.value = evaluation.value;
-      option.textContent = evaluation.label;
-      if (evaluation.value === 0) {
-          option.selected = true; // Marca l'opció per defecte
-      }
-      selectElement.appendChild(option);
+    const option = document.createElement('option');
+    option.value = evaluation.value;
+    option.textContent = evaluation.label;
+    if (evaluation.value === 0) {
+      option.selected = true; // Marca l'opció per defecte
+    }
+    selectElement.appendChild(option);
   });
 }
