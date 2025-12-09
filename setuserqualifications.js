@@ -20,6 +20,7 @@ Comentaris:
 
 */
 
+
 if (!window.__listenerRegistradoUserQualificacions) {
   window.__listenerRegistradoUserQualificacions = true;
   chrome.runtime.onMessage.addListener(handleMessage);
@@ -35,15 +36,23 @@ function handleMessage(message, sender, sendResponse) {
 }
 
 async function setUserNotes(jsonText, studentCode, force, changeDisabled, av, autoCloseComment, autoCloseAlumnes) {
- 
   const jsonData = parseJSON(jsonText);
-  if (!jsonData) return "Error en analitzar el JSON. Assegura't que estigui en el format correcte.";
+  if (!jsonData) {
+    console.log("Error en analitzar el JSON. Assegura't que estigui en el format correcte.", jsonData);
+    return "Error en analitzar el JSON. Assegura't que estigui en el format correcte.";
+  }
 
   const table = getQualificacionsTable();
-  if (!table) return "Error a llegir la informació de l'Esfer@";
+  if (!table){
+    console.log("Error a llegir la informació de l'Esfer@", table);
+    return "Error a llegir la informació de l'Esfer@";
+  } 
 
   const student = jsonData.find(al => al.idalu == studentCode);
-  if (!student) return "Alumne no trobat";
+  if (!student){
+    console.log("Alumne no trobat", student);
+    return "Alumne no trobat";
+  } 
 
   actualizarIdsDeSelectsYInputs(table, student.notes, force, changeDisabled, av );
   //aplicarNotesASeleccionats(student.notes, force, changeDisabled, av);
@@ -65,7 +74,12 @@ function parseJSON(jsonText) {
 }
 
 function getQualificacionsTable() {
-  return document.querySelector('table[data-st-table="qualificacions"]');
+  // const table = document.querySelector('.table .table-striped .table-hover .smart-table');
+  const table = document.querySelector("#mainView table.smart-table");
+  console.log("table", table);
+  table.classList.add('qualificacions-table-id');
+
+  return table;
 }
 
 async function aplicarComentaris(notes, av, autoCloseComment) {
@@ -106,16 +120,19 @@ function delay(ms) {
 }
 
 function actualizarIdsDeSelectsYInputs(table, notes, force, changeDisabled, currentAv) {
-  table.querySelectorAll("tr").forEach(tr => {
-    const tds = tr.querySelectorAll("td");
-    if (tds.length < 5) return;
 
+  table.querySelectorAll("tr").forEach(tr => {
+    
+    const tds = tr.querySelectorAll("td");
+
+    if (tds.length < 6) return;
+    
     const parts = tds[0].textContent.trim().split("_");
     const moduleCode = parts[0];
     const raCode = parts.length > 2 ? parts[2] : "T";
 
-    const select = tds[3].querySelector("select");
-    const input = tds[3].querySelector("input");
+    const select = tds[4].querySelector("select");
+    const input = tds[4].querySelector("input");
     
     if (input && input.value !== "") {
       console.log("Valor disponible:", input.value);  
