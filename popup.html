@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="styles.css">
 
 </head>
+
 <body>
     <div class="container-custom">
         <div class="header">
@@ -29,10 +31,15 @@
                 <input class="form-check-input" type="checkbox" id="optAutoCloseAlumnes">
                 <label class="form-check-label" for="optAutoCloseAlumnes">Cridar cerrarAlumnes() en finalitzar</label>
             </div> -->
+
+            <div class="mb-2">
+                <label for="optValidationText" class="form-label">Text Convalidació:</label>
+                <input type="text" class="form-control form-control-sm" id="optValidationText" value="CONV.">
+            </div>
         </div>
         <div class="content">
             <div class="column">
-                <select  id="evaluation" class="me-2" name="evaluation">
+                <select id="evaluation" class="me-2" name="evaluation">
                     <!-- Les opcions seran generades dinàmicament per JavaScript -->
                 </select>
                 <div id="viewBtnUserNotes" class="checkbox-container" style="display: none;">
@@ -63,7 +70,7 @@
                         <label for="forceProcess">Forçar</label>
                     </div>
                 </div>
-                
+
             </div>
             <div class="column">
                 <textarea id="userNotesText" class="form-control text-area" id="text-area"></textarea>
@@ -73,4 +80,5 @@
     </div>
     <script src="popup.js"></script>
 </body>
+
 </html>

@@ -2,6 +2,7 @@
 let changeDisabled = true;
 let autoCloseComment = false;
 let autoCloseAlumnes = false;
+let validationText = "CONV.";
 
 let studentCode = "";
 let studentName = "";
@@ -41,10 +42,11 @@ function cargarInfoApp() {
 
 async function cargarOpciones() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(["changeDisabled", "autoCloseComment", "autoCloseAlumnes"], (result) => {
+    chrome.storage.sync.get(["changeDisabled", "autoCloseComment", "autoCloseAlumnes", "validationText"], (result) => {
       changeDisabled = result.changeDisabled ?? true;
       autoCloseComment = result.autoCloseComment ?? false;
       autoCloseAlumnes = result.autoCloseAlumnes ?? false;
+      validationText = result.validationText ?? "CONV.";
       resolve();
     });
   });
@@ -54,9 +56,11 @@ function inicializarUIOpciones() {
   const elChange = document.getElementById("optChangeDisabled");
   const elComment = document.getElementById("optAutoCloseComment");
   const elAlumnes = document.getElementById("optAutoCloseAlumnes");
+  const elValidation = document.getElementById("optValidationText");
   if (elChange) elChange.checked = !!changeDisabled;
   if (elComment) elComment.checked = !!autoCloseComment;
   if (elAlumnes) elAlumnes.checked = !!autoCloseAlumnes;
+  if (elValidation) elValidation.value = validationText;
 }
 
 function wireSettingsUI() {
@@ -71,6 +75,7 @@ function wireSettingsUI() {
   const elChange = document.getElementById("optChangeDisabled");
   const elComment = document.getElementById("optAutoCloseComment");
   const elAlumnes = document.getElementById("optAutoCloseAlumnes");
+  const elValidation = document.getElementById("optValidationText");
   if (elChange) {
     elChange.addEventListener("change", () => {
       changeDisabled = elChange.checked;
@@ -87,6 +92,12 @@ function wireSettingsUI() {
     elAlumnes.addEventListener("change", () => {
       autoCloseAlumnes = elAlumnes.checked;
       chrome.storage.sync.set({ autoCloseAlumnes });
+    });
+  }
+  if (elValidation) {
+    elValidation.addEventListener("input", () => {
+      validationText = elValidation.value;
+      chrome.storage.sync.set({ validationText });
     });
   }
 }
@@ -200,9 +211,10 @@ document.getElementById("setUserNotes").addEventListener("click", async () => {
       changeDisabled: changeDisabled,
       av: getAv(),
       autoCloseComment: autoCloseComment,
-      autoCloseAlumnes: autoCloseAlumnes
+      autoCloseAlumnes: autoCloseAlumnes,
+      validationText: validationText
     }, (response) => {
-      document.getElementById("results").textContent = response.resultado;
+      //document.getElementById("results").textContent = response.resultado;
     });
   }
   ).catch(err => {
